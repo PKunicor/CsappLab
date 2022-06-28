@@ -143,7 +143,7 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  return ~(~(~x & y) & ~(x & ~y));  
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,9 +152,9 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+  int x = 1;
+  x = x << 31;
+  return x;
 }
 //2
 /*
@@ -165,7 +165,15 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  // x = -1 :   x + 1 = 0,   异或后  排除x+1 = 0,这种情况
+  //当x=-1时, flag_2为 0  返回0
+  //当x不等于-1时    flag_2为1,返回值是flag_1的值
+  //flag_1    只有Tmin ^ Tmax 取反后等于0     
+  //-1是一个特例   取反后为0
+  int y = x + 1;  //Tmin
+  int flag_1 = !(~(x ^ y)); 
+  int flag_2= !!(y ^ 0);
+  return flag_1 & flag_2; 
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,8 +184,15 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int y = 0xAA; 
+  //+优先级大于 << 
+  y  = y + (y << 8);
+  y = y + (y << 16);
+  //只留下x的偶数位值
+  x = x & y;
+  return !(y ^ x) ;
 }
+
 /* 
  * negate - return -x 
  *   Example: negate(1) = -1.
@@ -186,7 +201,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -199,7 +214,12 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int y = x & 0x3f; //截取x的后6位
+  int flag_1 = !(x >> 6); //右移六位后,取反为1   x的高位全是0  符合条件
+  int flag_2 = !((x >> 3) ^ 0x6);  //满足第一个条件后,右移3位   异或110   如果为0  就是属于'0' 到'7'
+  int flag_3 = !(y ^ 0x38);  //满足第一个条件后   是'8'
+  int flag_4 = !(y ^ 0x39);   //满足第一个条件后   是'9'
+  return flag_1 & (flag_2 | flag_3 | flag_4);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -209,7 +229,23 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  //返回值为:  x = 0, return (x & y) ^ (!x & z)   
+  //           x != 0, 把x变为全1  返回相同
+  //关键点在于 x == 0  和x!=0    这种情况有很多种
+  //           将上面的问题转换成   0  对应  全1
+  //                               !0  对应  全0
+  //                               这样  就变成了两种情况  全0  全1
+  //最终处理之后返回值为    (!x & y) ^ (x & z)
+  x = !x;   //取反  把x变为 0 1两种    把他们扩展到32位
+  x = (x << 1) + x;
+  x = (x << 2) + x;
+  x = (x << 4) + x;
+  x = (x << 8) + x;
+  x = (x << 16) + x;
+  printf("%d  %x\n", x, x);
+  printf("%d  %x\n", !x, !x);
+  printf("%d  %x\n", ((!x) & y), (!x) & y);
+  return ((!x) & y) ^ (x & z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
