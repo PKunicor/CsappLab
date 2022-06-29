@@ -236,16 +236,13 @@ int conditional(int x, int y, int z) {
   //                               !0  对应  全0
   //                               这样  就变成了两种情况  全0  全1
   //最终处理之后返回值为    (!x & y) ^ (x & z)
-  x = !x;   //取反  把x变为 0 1两种    把他们扩展到32位
+  x = !x;   //取非 把x变为 0 1两种    把他们扩展到32位
   x = (x << 1) + x;
   x = (x << 2) + x;
   x = (x << 4) + x;
   x = (x << 8) + x;
   x = (x << 16) + x;
-  printf("%d  %x\n", x, x);
-  printf("%d  %x\n", !x, !x);
-  printf("%d  %x\n", ((!x) & y), (!x) & y);
-  return ((!x) & y) ^ (x & z);
+  return ((~x) & y) ^ (x & z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -255,7 +252,24 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  //基本思路:  基本返回值0,找出返回1的条件
+  // flag_3      x == y     1
+  // flag_4      y-x  且xy同号  减法不会溢出    大于0  1    小于等于0  1
+  //flag _5      x小于0  y大于0     1
+  //flag_6       x大于0  y小于0     1
+  int nagete_x = ~x + 1;
+  int sum = y + nagete_x; 
+  int flag_3 = !(x ^ y);
+  int flag_5 = (x >> 31) & !(y >> 31);   
+  int flag_6 = !(x >> 31) & (y >> 31);   
+  int flag_4 = !(sum >> 31) & !flag_5 & !flag_6;   //xy同号  减法不会溢出  减法有效
+ // printf("flag_1 = %d %x \n",flag_1, flag_1);
+ // printf("flag_2 = %d %x \n",flag_2, flag_2);
+ // printf("flag_3 = %d %x \n",flag_3, flag_3);
+ // printf("flag_4 = %d %x \n",flag_4, flag_4);
+ // printf("flag_5 = %d %x \n",flag_5, flag_5);
+ // printf("flag_6 = %d %x \n",flag_6, flag_6);
+  return flag_3 | flag_4 | flag_5;
 }
 //4
 /* 
@@ -267,7 +281,25 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  //基本思路:   取负值,按位取反+1  只有0和Tmin的负值 是自己
+  // x和-x右移31位  结果就是各自的符号位扩展31位
+  // 相加后  有两种情况:(1): 0和Tmin   相加后结果为0
+  //                    (2): 其他相加后    结果为全1
+  //  flag_1:   ~sum   0和Tmin结果为全1  其他为全0
+  //  flag_2:   ~0和~Tmin    ~Tmin 01111  ~0全1
+  //  flag_3:  flag_1 & flag_2 Tmin为 01111 0为1111 其他为全0   
+  //          右移31位后  0为 全1值为-1   其他为全0值为0   取负值后返回   
+  int neg_x = ~x;
+  int y = neg_x + 1;
+  int hight_x = x >> 31;
+  int hight_y = y >> 31;
+  int flag_1 = ~(hight_x + hight_y);
+  int flag_2 = neg_x;
+  int flag_3 = (~(flag_1 & flag_2) >> 31) + 1;
+ // printf("%d %x\n", flag_1, flag_1);
+ // printf("%d %x\n", flag_1, flag_2);
+ // printf("%d %x\n", flag_3, flag_3);
+  return flag_3;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
