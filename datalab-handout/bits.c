@@ -322,7 +322,7 @@ int howManyBits(int x) {
   //对x是负数的情况   除了Tmin 特殊处理:  去掉符号位后  给sum赋值32
   //                  其他负数  负数高位的连续1都是无用数据,只需要找到高位的第一个0  从这开始到最后的位数加上符号位就是  负数的最小位数
   //                            通过取反,找第一个1  就是原来要找的第一个0   转变为和求正数相同的步骤
-  // 除了x是0和Tmin之外,  其他情况都要给sum加1   加上符号位
+  // 除了x是Tmin之外,  其他情况都要给sum加1   加上符号位
   int x_32, x_16, x_8, x_4, x_2;  //分别表示x的不同比特
   int bit_8 = 0xff << 8;
   int bit_32 = (bit_8 + 0xff) << 16;   
@@ -399,7 +399,39 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  //思路:  (1) 0返回0
+  //       (2) exp全1 为无穷 直接返回
+  //       (3) exp全0 f不是全0  直接加左移一位   最后补上符号位
+  //                  f是全0   不做处理 返回原值 
+  //       (4) exp 不全1全0   直接加1 相当于乘2
+  unsigned bit_exp;
+  unsigned bit_f;  //小数部分
+  unsigned flag_s;  //符号位
+  if(uf == 0){
+    return 0;
+  }
+
+  bit_f = uf & (0x007fffff);
+  bit_exp = uf & (0x7f800000);   //取出指数部分
+  flag_s = uf >> 31;
+  if(bit_exp == 0x7f800000){
+    return uf;
+  }
+  bit_exp = bit_exp >> 23;       //exp的值
+  if(bit_exp != 0){
+    bit_exp = bit_exp + 1;
+    bit_exp = bit_exp << 23;
+    uf = uf & ~(0x7f800000);
+    uf = uf ^ bit_exp;
+  }
+  if(bit_exp == 0 && bit_f != 0){
+      uf = uf << 1;
+      if(flag_s == 1){
+        uf = uf | (flag_s << 31);  //补上符号位
+      }
+  }
+
+  return uf;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -414,7 +446,37 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+  //基本思路 确定指数的范围   exp < 127   指数小于0时 小数,返回0
+  //                          exp > 158    指数大于31  越界
+  //                          exp 全0      返回0
+  //                          exp 全1      返回0x80000000u
+  //                          exp 其他情况下   对f部分补上隐藏位1  再右移exp-127位,
+  //                              最后根据s返回正负
+  unsigned bit_exp;
+  unsigned bit_f;  //小数部分
+  unsigned flag_s;  //符号位
+  unsigned E;      //指数
+  int F2Int;
+  bit_f = uf & (0x007fffff);   //取出小数部分
+  bit_f = bit_f | (0x00800000);  //补上前面隐藏1
+  bit_exp = uf & (0x7f800000);   //取出指数部分
+  bit_exp = bit_exp >> 23;
+  flag_s = uf >> 31;
+  //printf("s %u %x  exp  %u %x   f  %u  %x\n", flag_s, flag_s, bit_exp, bit_exp, bit_f, bit_f);
+  if(bit_exp == 0xff || bit_exp > 158){  //无穷   或者NaN   指数越界  
+    return 0x80000000u;
+  }
+  if(bit_exp < 127 || bit_exp  == 0){  //指数是负数   非规格数
+    return 0;
+  }   
+  E = bit_exp - 127;
+  bit_f = bit_f >> (23 - E);  //右移
+  //printf("E %u %x  bit_f   %u %x \n", E, E, bit_f, bit_f);
+  F2Int = bit_f;   
+  if(flag_s == 1){
+    F2Int = -F2Int;
+  }
+  return F2Int;
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -430,5 +492,22 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+  //基本思路:
+  //        x的正负代表左移右移的位数
+  //        两种情况: (1)x负数   
+  unsigned bit_exp;
+  unsigned bit_float;  //float值的bit位
+  unsigned INF = 0x7f800000;
+  if(x < -127){  //值太小
+    return 0;
+  }   
+  if(x > 128){  //太大  返回+INF
+    return INF;
+  }
+  //printf("x    %d\n", x);
+  bit_exp = x + 127;
+  bit_exp = bit_exp << 23;
+  bit_float = INF & bit_exp;
+  //printf("bit_float  %u  %x\n", bit_float, bit_float);
+  return bit_float;
 }
