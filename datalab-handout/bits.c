@@ -493,8 +493,8 @@ int floatFloat2Int(unsigned uf) {
  */
 unsigned floatPower2(int x) {
   //基本思路:
-  //        x的正负代表左移右移的位数
-  //        两种情况: (1)x负数   
+  //        时间超时  10s内跑不完所有测试数据  可能是电脑问题,或者是算法问题
+  //        后面换一个机器测试一下
   unsigned bit_exp;
   unsigned bit_float;  //float值的bit位
   unsigned INF = 0x7f800000;
