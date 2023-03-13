@@ -495,7 +495,6 @@ unsigned floatPower2(int x) {
   //printf("x    %d\n", x);
   bit_exp = x + 127;
   bit_exp = bit_exp << 23;
-  bit_float = INF & bit_exp;
   //printf("bit_float  %u  %x\n", bit_float, bit_float);
-  return bit_float;
+  return bit_exp;
 }
