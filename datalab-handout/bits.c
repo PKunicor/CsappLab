@@ -317,12 +317,6 @@ int logicalNeg(int x) {
 int howManyBits(int x) {
   //思路  用上面做的函数   conditional  做两个if功能    一次返回分半查找的剩余一半函数   
   //                                                    一次计算分半如果选择前一半,bit数要加上一半的长度,选择后面长度加0不做处理
-  //用0xffff0000   留下x的前16位,如果不等于0 说明位数大于16  等于0 说明位数小于16 在后16位内再进行分半查找
-  //对x全部化为正数做处理   方便右移是左边添0  不改变大小
-  //对x是负数的情况   除了Tmin 特殊处理:  去掉符号位后  给sum赋值32
-  //                  其他负数  负数高位的连续1都是无用数据,只需要找到高位的第一个0  从这开始到最后的位数加上符号位就是  负数的最小位数
-  //                            通过取反,找第一个1  就是原来要找的第一个0   转变为和求正数相同的步骤
-  // 除了x是Tmin之外,  其他情况都要给sum加1   加上符号位
   int x_32, x_16, x_8, x_4, x_2;  //分别表示x的不同比特
   int bit_8 = 0xff << 8;
   int bit_32 = (bit_8 + 0xff) << 16;   
@@ -330,17 +324,12 @@ int howManyBits(int x) {
   int flag_32,flag_16,flag_8,flag_4,flag_2;  //表示 ~x_32  重使用一次 减少 ops数量
   int sum = 0;
   int flag_nage = !!(x >> 31);     //  x是负数   值为1
-  //通过负0和Tmin 都是自己   ^之后为0  排除x是0的情况    当x是Tmin 是值为1
-  //int flag_Tmin = !(x ^ (~x + 1)) & x; 
-  int flag_Tmin = !(x << 1) & x;   //Tmin 左移一位 去掉符号位后是全0   比上面的方法减少op
-  int extend_f_T = ~flag_Tmin + 1;      //扩展flag_Tmin
   int extend_f_n = ~flag_nage + 1;      //扩展flag_nage
-  sum = sum + (flag_Tmin & 32);
-  x = (extend_f_T & 0) ^ ((~extend_f_T) & x);  // flag_Tmin 是1时  x赋值0   是0是  x不变
 
   x = (extend_f_n & (~x)) ^ ((~extend_f_n) & x);  // flag_nage 是1时  x赋值~x   是0是  x不变
   
   bit_8 = 0xf0; 
+
   x_32 = x & bit_32;
   x_32 = !x_32;
   x_32 = ~x_32 + 1;
@@ -373,16 +362,15 @@ int howManyBits(int x) {
   sum = sum + (flag_4 & 2);
 
   x = x_2;
-  x_2 = x_2 >> 1;
+  x_2 = x_2 & 2;
   x_2 = !x_2;
   x_2 = ~x_2 + 1;
   flag_2 = ~x_2;
   x = (flag_2 & (x >> 1)) ^ ((x_2 & (x & 1)));
   sum = sum + (flag_2 & 1);
+  sum = sum + (x & 1);  //如果最后两位是01  x二分后是1  就要加1
 
-  sum = sum + (x & 1);  //如果x是0  或者处理之后的Tmin  剩余位全是0    不加最后一个比特位   其他情况加上1
-
-  sum = sum + (!flag_Tmin & 1);   //非Tmin  加上符号位    0符号位就是0  一个bit表示
+  sum = sum + 1;  //加符号位
    
   return sum;
 }
