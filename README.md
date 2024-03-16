@@ -7,6 +7,6 @@
 - [x]  attack Lab
 - [ ]  perf Lab
 - [x]  cache lab
-- [ ]  shell Lab
+- [x]  shell Lab
 - [ ]  malloc Lab
 - [ ]  proxy Lab
