@@ -193,16 +193,21 @@ void eval(char *cmdline) {
       int status;
       if ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) < 0)  //如果都没终止返回0 有一个被终止 返回终止pid
         unix_error("waitfg: waitpid error");
+      printf("%d\n", status);
       if (WIFEXITED(status)) {
+        printf("Job [%d] (%d) exit or return by %d\n", pid2jid(pid), pid, WEXITSTATUS(status));
+        fflush(stdout);
         deletejob(jobs, pid);  //删除作业
       }
       if (WIFSIGNALED(status)) {
-        printf("Job [%d] (%d) terminated by signal %d", pid2jid(pid), pid, WTERMSIG(status));
+        printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, WTERMSIG(status));
+        fflush(stdout);
         deletejob(jobs, pid);  //删除作业
       }
     }
     else {
       printf("[%d] (%d)  %s", pid2jid(pid), pid, cmdline);
+      fflush(stdout);
     }
   }
   return;
@@ -273,7 +278,7 @@ int builtin_cmd(char **argv) {
     exit(0);
   if (!strcmp(argv[0], "jobs")) {
     listjobs(jobs);
-    exit(0);
+    return 1;
   }
 
   if (!strcmp(argv[0], "&"))

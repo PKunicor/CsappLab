@@ -6,7 +6,7 @@
 - [x]  bomb Lab 
 - [x]  attack Lab
 - [ ]  perf Lab
-- [ ]  cache lab
+- [x]  cache lab
 - [ ]  shell Lab
 - [ ]  malloc Lab
 - [ ]  proxy Lab
